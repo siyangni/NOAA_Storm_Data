@@ -1,0 +1,163 @@
+---
+title: "Reproducible Research - Course Project 2"
+author: "Siyang Ni"
+date: "12/12/2020"
+output:
+ html_document:
+         keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Report of Health and Economic Impacts of Storm - NOAA Storm Database 
+
+<br>
+<br>
+
+## Synopsis
+
+Storms and other severe weather events have caused both public health and economic problems across the US. Over the years, we have seen severe adverse weather cases causing fatalities, injuries, and property damage. prevention and Reduction of negative socio-economic impact caused by major severe adverse weather events has become a key policy concern shared by US governments of all levels.
+
+This project aims at providing data-driven intelligence on the health and impact of 
+adverse weather events for US policy makers. Our analysis is based on the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database. 
+
+<br>
+
+## Data Processing
+
+<br>
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse) # multi-purpose
+library(data.table) # for reading into data
+library(R.utils) # for reading into data
+```
+<br>
+
+### Data
+
+<br>
+The data used in this analysis is fully accessible online through [NOAA Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2).Documentation related to the relevant database can be accesed at:
+
+-[National Weather Service](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+
+-[National Climatic Data Center Storm Events FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+```{r, cache=TRUE}
+fileurl = "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2"
+
+if (!file.exists("./data")){dir.create("./data")}
+
+download.file(fileurl, file.path("./data/storm.bz2"))
+
+dt <- fread("./data/storm.bz2")
+ 
+```
+<br>
+
+### Data Preperation
+
+<br>
+
+Our analysis uses the following variables in the NOAA dataset:
+<br>
+Variables concerning health effect
+-`FATALITIES`: Approximate number of deaths
+-`INJURIES`: Approximate number of injuries
+<br>
+Variables concerning economic effect
+-`PROPDMG`: approximate property damages
+-`PROPDMGEXP`: Units for property damage value
+-`CROPDMG`: approximate crop damages
+-`CROPDMGEXP`: Units for crop damage value
+<br>
+Variables concerning Adverse weather event Type
+-`EVTYPE`: Adverse weather event type (Tornado, Wind, Snow, Flood, etc..)
+
+<br>
+
+```{r}
+vars <- c("EVTYPE", "FATALITIES", "INJURIES", "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")
+df <- as.data.frame(dt[, ..vars])
+```
+
+```{r}
+sum(is.na(df))
+```
+
+<br>
+
+Three new variables were created based on the original variables in the dataset. 
+The three variables are: `event`, `dproperty`, and `dcrop`. The process of creating each of the three variables are as followed
+<br>
+`event` is created based on `EVTYPE`. `event` organized all types of adverse wether type into 10 types: hail, heat, flood, wind, storm, snow, tornado, winter, and rain. <br>
+```{r}
+# create a new variable EVENT to organize EVTYPE into 10 levels
+df$event <- "OTHER"
+# group by keyword in EVTYPE
+df$event[grep("HAIL", df$EVTYPE, ignore.case = TRUE)] <- "HAIL"
+df$event[grep("HEAT", df$EVTYPE, ignore.case = TRUE)] <- "HEAT"
+df$event[grep("FLOOD",df$EVTYPE, ignore.case = TRUE)] <- "FLOOD"
+df$event[grep("WIND", df$EVTYPE, ignore.case = TRUE)] <- "WIND"
+df$event[grep("STORM",df$EVTYPE, ignore.case = TRUE)] <- "STORM"
+df$event[grep("SNOW", df$EVTYPE, ignore.case = TRUE)] <- "SNOW"
+df$event[grep("TORNADO",df$EVTYPE, ignore.case = TRUE)] <- "TORNADO"
+df$event[grep("WINTER", df$EVTYPE, ignore.case = TRUE)] <- "WINTER"
+df$event[grep("RAIN", df$EVTYPE, ignore.case = TRUE)] <- "RAIN"
+# Show the new variable
+sort(table(df$event), decreasing = TRUE)
+## 
+```
+<br>
+
+Variable `dproperty` describes values for property damage (in dollars). Similarly, `dcrop` describes values for crop damage (in dollars). They are created based on `PROPDMG`, `PROPDMGEXP`, `CROPDMG`, and `CROPDMGEXP`. `dproperty` is the product of the dollar value recorded in `PROPDMG` and the dollar unit recorded in `CROPDMGEXP`.  `dcrop` is the product of the dollar value recorded in `CROPDMG` and the dollar unit recorded in `CROPDMGEXP`.
+<br>
+The dollar unit recorded in `CROPDMGEXP` and `CROPDMGEXP` is recoded in the following way:
+<br>
+- K or k: thousand dollars (10^3)
+- M or m: million dollars (10^6)
+- B or b: billion dollars (10^9)
+- All Others: processed as dollars
+
+```{r}
+df$PROPDMGEXP <- as.character(df$PROPDMGEXP)
+
+df$propdmgexp <- 0
+df$propdmgexp[grep("K", df$PROPDMGEXP,ignore.case = TRUE)] <- 3
+df$propdmgexp[grep("M", df$PROPDMGEXP,ignore.case = TRUE)] <- 6
+df$propdmgexp[grep("B", df$PROPDMGEXP,ignore.case = TRUE)] <- 9
+
+df$dproperty <- df$PROPDMG * (10^df$propdmgexp)
+```
+
+```{r}
+df$CROPDMGEXP <- as.character(df$CROPDMGEXP)
+
+df$cropdmgexp <- 0
+df$cropdmgexp[grep("K", df$CROPDMGEXP,ignore.case = TRUE)] <- 3
+df$cropdmgexp[grep("M", df$CROPDMGEXP,ignore.case = TRUE)] <- 6
+df$cropdmgexp[grep("B", df$CROPDMGEXP,ignore.case = TRUE)] <- 9
+
+df$dcrop <- df$CROPDMG * (10^df$cropdmgexp)
+```
+<br>
+first 10 most appear values for property damage (in dollars) 
+```{r}
+sort(table(df$dproperty),decreasing=TRUE)[1:10]
+```
+<br>
+first 10 most appear values for crop damage (in dollars) 
+```{r}
+sort(table(df$dcrop),decreasing=TRUE)[1:10]
+```
+
+<br>
+<br>
+
+## Data Analysis
+
+
+
+
+
