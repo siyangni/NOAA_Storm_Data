@@ -1,33 +1,35 @@
 ---
 title: "Reproducible Research - Course Project 2"
 author: "Siyang Ni"
-date: "12/12/2020"
+date: "12/13/2020"
 output:
  html_document:
          keep_md: true
+         theme: cosmo
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Report of Health and Economic Impacts of Storm - NOAA Storm Database 
+<center> <h1>Health and Economic Impact of Storm <br> A Report Based on NOAA Storm Database</h1> </center>
+
 
 <br>
 <br>
 
 ## Synopsis
 
-Storms and other severe weather events have caused both public health and economic problems across the US. Over the years, we have seen severe adverse weather cases causing fatalities, injuries, and property damage. prevention and Reduction of negative socio-economic impact caused by major severe adverse weather events has become a key policy concern shared by US governments of all levels.
+
+Storms and other severe weather events have caused both public health and economic problems across the US. Over the years, we have seen severe adverse weather cases causing fatalities, injuries, and property damage. prevention and Reduction of negative socio-economic impact caused by major severe adverse weather events have become a key policy concern shared by US governments of all levels.
 
 This project aims at providing data-driven intelligence on the health and impact of 
-adverse weather events for US policy makers. Our analysis is based on the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database. 
+adverse weather events for US policy makers. Our analysis is based on the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database. The report first shows the process of data processing. Then, analysis and results are presented, followed by a brief discussion of the result's policy implication. 
 
 <br>
 
 ## Data Processing
 
-<br>
 ```{r, message=FALSE, warning=FALSE}
 library(tidyverse) # multi-purpose
 library(data.table) # for reading into data
@@ -37,7 +39,6 @@ library(R.utils) # for reading into data
 
 ### Data
 
-<br>
 The data used in this analysis is fully accessible online through [NOAA Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2).Documentation related to the relevant database can be accesed at:
 
 -[National Weather Service](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
@@ -49,31 +50,33 @@ fileurl = "https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.
 
 if (!file.exists("./data")){dir.create("./data")}
 
+if (!file.exists("./data/storm.bz2")){
 download.file(fileurl, file.path("./data/storm.bz2"))
+}
 
 dt <- fread("./data/storm.bz2")
- 
 ```
 <br>
 
 ### Data Preperation
 
-<br>
-
 Our analysis uses the following variables in the NOAA dataset:
-<br>
-Variables concerning health effect
--`FATALITIES`: Approximate number of deaths
--`INJURIES`: Approximate number of injuries
-<br>
-Variables concerning economic effect
--`PROPDMG`: approximate property damages
--`PROPDMGEXP`: Units for property damage value
--`CROPDMG`: approximate crop damages
--`CROPDMGEXP`: Units for crop damage value
-<br>
-Variables concerning Adverse weather event Type
--`EVTYPE`: Adverse weather event type (Tornado, Wind, Snow, Flood, etc..)
+
+Variables concerning health effect:
+
+- `FATALITIES`: Approximate number of deaths
+- `INJURIES`: Approximate number of injuries
+
+Variables concerning economic effect:
+
+- `PROPDMG`: approximate property damages
+- `PROPDMGEXP`: Units for property damage value
+- `CROPDMG`: approximate crop damages
+- `CROPDMGEXP`: Units for crop damage value
+
+Variables concerning Adverse weather event Type:
+
+- `EVTYPE`: Adverse weather event type (Tornado, Wind, Snow, Flood, etc..)
 
 <br>
 
@@ -89,9 +92,10 @@ sum(is.na(df))
 <br>
 
 Three new variables were created based on the original variables in the dataset. 
-The three variables are: `event`, `dproperty`, and `dcrop`. The process of creating each of the three variables are as followed
-<br>
-`event` is created based on `EVTYPE`. `event` organized all types of adverse wether type into 10 types: hail, heat, flood, wind, storm, snow, tornado, winter, and rain. <br>
+The three variables are: `event`, `dproperty`, and `dcrop`. The process of creating each of the three variables are as followed: 
+
+`event` is created based on `EVTYPE`. `event` organized all types of adverse wether type into 10 types: hail, heat, flood, wind, storm, snow, tornado, winter, and rain.
+
 ```{r}
 # create a new variable EVENT to organize EVTYPE into 10 levels
 df$event <- "OTHER"
@@ -107,14 +111,15 @@ df$event[grep("WINTER", df$EVTYPE, ignore.case = TRUE)] <- "WINTER"
 df$event[grep("RAIN", df$EVTYPE, ignore.case = TRUE)] <- "RAIN"
 # Show the new variable
 sort(table(df$event), decreasing = TRUE)
-## 
 ```
 <br>
 
 Variable `dproperty` describes values for property damage (in dollars). Similarly, `dcrop` describes values for crop damage (in dollars). They are created based on `PROPDMG`, `PROPDMGEXP`, `CROPDMG`, and `CROPDMGEXP`. `dproperty` is the product of the dollar value recorded in `PROPDMG` and the dollar unit recorded in `CROPDMGEXP`.  `dcrop` is the product of the dollar value recorded in `CROPDMG` and the dollar unit recorded in `CROPDMGEXP`.
-<br>
+
+
 The dollar unit recorded in `CROPDMGEXP` and `CROPDMGEXP` is recoded in the following way:
-<br>
+
+
 - K or k: thousand dollars (10^3)
 - M or m: million dollars (10^6)
 - B or b: billion dollars (10^9)
@@ -142,22 +147,136 @@ df$cropdmgexp[grep("B", df$CROPDMGEXP,ignore.case = TRUE)] <- 9
 df$dcrop <- df$CROPDMG * (10^df$cropdmgexp)
 ```
 <br>
-first 10 most appear values for property damage (in dollars) 
+First 10 most-appeared values for property damage (in dollars) 
 ```{r}
 sort(table(df$dproperty),decreasing=TRUE)[1:10]
 ```
 <br>
-first 10 most appear values for crop damage (in dollars) 
+First 10 most-appeared values for crop damage (in dollars) 
 ```{r}
 sort(table(df$dcrop),decreasing=TRUE)[1:10]
 ```
 
 <br>
-<br>
 
 ## Data Analysis
 
 
+The table below shows that among all ten types of adverse weather condition in the US, flood is the one that causes the most severe economic loss in general. Flood also incurs the heaviest property damage and crop damage, surpassing the second ranked type- storm, by a significant amount in both property damage and crop damage. 
+
+```{r,warning=FALSE, message=FALSE}
+# Split df by event and apply summarize function on dproperty and dcrop
+aggpcd <- df %>% group_by(event) %>% 
+        summarise(Total_Damage=sum(dproperty + dcrop, na.rm=TRUE)) %>% 
+        arrange(desc(Total_Damage))
+aggpcd$Type <- "property+crop_damage"
+
+# Split df by event and apply summarize function on dproperty
+aggp <- df %>% group_by(event) %>% 
+        summarise(Total_Damage=sum(dproperty, na.rm = TRUE)) %>% 
+        arrange(desc(Total_Damage))
+aggp$Type <- "property_damage"
+
+# Split df by event and apply summarize function on dcrop
+aggc <- df %>% group_by(event) %>% 
+        summarise(Total_Damage=sum(dcrop, na.rm = TRUE)) %>% 
+        arrange(desc(Total_Damage))
+aggc$Type <- "crop_damage"
+```
+
+```{r}
+# Combine, sorted by total damage of property and crop
+ecoimpact <- aggpcd %>% 
+        left_join(aggp, by='event') %>% left_join(aggc, by='event')
+```
+<br>
+
+On the other hand, tornado is the number one threat for public heath and safety, causing a total of 5,661 death and 91,407 injuries over the years. Heat is a distant second, causing 2,626 deaths and 12,224 injuries over the years. 
+
+```{r,warning=FALSE, message=FALSE}
+# Split the dataset by event and apply summarize on fataltiies and injuries 
+aggft <- df %>% group_by(event) %>% 
+        summarise(Total = sum(FATALITIES, INJURIES,na.rm = TRUE)) %>%
+        arrange(desc(Total))
+aggft$Type <- "fatalities+injuries"
+
+# Split the dataset by event and apply summarize on fatalities
+aggf <- df %>% group_by(event) %>% 
+        summarise(Total = sum(FATALITIES, na.rm = TRUE)) %>% 
+        arrange(desc(Total))
+aggf$Type <- "fatalities"
+
+# Split the dataset by event and apply summarize on injuries
+aggi <- df %>% group_by(event) %>% 
+        summarise(Total = sum(INJURIES, na.rm = TRUE)) %>% 
+        arrange(desc(Total))
+aggi$Type <- "injuries"
+```
+
+```{r}
+healthimpact <- aggft %>% left_join(aggf, by='event') %>% 
+        left_join(aggi, by='event')
+```
+
+<br>
+
+## Results
 
 
+The data visualization result confirms the result in our previous section. Flood is the single most threatening adverse weather condition for property and crop. Overshadowing all other types of adverse weather condition. The economic loss caused by flood alone surpasses the loss caused by storm and tornado combined, which are the second and third threatening adverse weather condition in the US. 
 
+```{r}
+eco <- rbind(aggp, aggc)
+```
+
+
+```{r}
+eco$event <- as.factor(eco$event)
+
+ggplot(data=eco, aes(reorder(event, Total_Damage),Total_Damage, fill=Type)) +
+        geom_bar(stat='identity') + coord_flip() +
+        labs(x="Adverse Weather Condition Type",
+            y="Total Damages Incurred (in US Dollars)",
+            title="Property and Crop Damage Caused by Adverse Weather Event")+
+        scale_fill_manual(values = alpha(c("red", "blue"), .7),
+                          name = "Economic Damage Consequence",
+                          labels=c('Crop Damage','Property Damage'))+
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank())
+```
+
+
+<br>
+
+When it comes to public health and safety, tornado is the most life and health threatening adverse weather condition. Over the years, tornado-incurred injuries and deaths almost exceed injuries and deaths caused by all other types of adverse weather condition combined. 
+
+```{r}
+health <- rbind(aggf, aggi)
+```
+
+```{r}
+health$event <- as.factor(health$event)
+
+ggplot(data=health, aes(reorder(event, Total),Total, fill=Type)) +
+        geom_bar(stat='identity') + coord_flip() + 
+        labs(x="Adverse Weather Condition Type",
+            y="Total Fatalities/Injuries Incurred",
+            title="Total Fatalities and Injuries Caused by Adverse Weather Event") +
+        scale_fill_manual(values = alpha(c('red','blue'), .7),
+                          name="Health and Safety Consequence",
+                          labels=c('Fatalities', 'Injuries')) +
+        theme(panel.grid.major = element_blank(), 
+              panel.grid.minor = element_blank(),
+              panel.background = element_blank())
+```
+
+<br>
+
+
+## Discussion and Policy Recommendation
+
+Our analysis has shown that flood is the most economy-threatening adverse weather condition, while tornado is the most life-and-health-threatening adverse weather condition in the US over the past years. Based on this result, we recommended federal and local governments prioritize response measures toward flood and tornado when making and impleneting disaster prevention, intervention and remediation policies. 
+
+<br>
+<br>
