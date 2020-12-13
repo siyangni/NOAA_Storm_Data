@@ -7,6 +7,12 @@ output:
          keep_md: true
          theme: cosmo
 ---
+<style type="text/css">
+
+body, td {
+   font-size: 19px;
+}
+</style>
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
